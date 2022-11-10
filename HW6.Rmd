@@ -1,0 +1,109 @@
+---
+title: "HW5"
+author: "Xuesen Zhao"
+date: "2022-11-09"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(ggridges)
+
+knitr::opts_chunk$set(
+	echo = TRUE,
+	warning = FALSE,
+	fig.width = 8, 
+  fig.height = 6,
+  out.width = "90%"
+)
+
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
+
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+```
+
+
+## Question 1
+
+## Question 2
+
+```{r}
+homicides = read_csv("./data/homicide_data.csv") %>%
+  janitor::clean_names() 
+```
+
+The raw data was collected by Washington Post on over 52,000 criminal homicides over the past decade in 50 of the largest cities in the U.S. The original data set contained `r nrow(homicides)` rows and `r ncol(homicides)` columns. The features included the case id, reported date, the first and last name of the vicitim, as well as the race, age, and gender of the victim. It also contained variables that describe the location of homicides, and the disposition. 
+
+```{r}
+homicides %>%
+  mutate(
+    city_state = str_c(city,state,sep= ", ")
+  ) %>%
+  group_by(city_state) %>%
+  summarize(
+    solved_cases = sum(disposition == "Closed by arrest"),
+    unsolved_cases = sum(disposition != "Closed by arrest")
+  )
+```
+
+The above table showed the number of solved homicides (with the disposition being "Closed with arrest") and the number of unsolved homicides (with the dispositions of "Closed without arrest" or "Open/No arrest") by each city. 
+
+```{r}
+Baltimore_summary = homicides %>%
+  mutate(
+    city_state = str_c(city,", ",state)
+  ) %>%
+  group_by(city_state) %>%
+  summarize(
+    solved_cases = sum(disposition == "Closed by arrest"),
+    unsolved_cases = sum(disposition != "Closed by arrest"),
+    n = n()
+  ) %>%
+  filter(city_state == "Baltimore, MD") 
+
+Baltimore_test = prop.test(
+  x = Baltimore_summary %>% pull(unsolved_cases),
+  n = Baltimore_summary %>% pull(n)
+          ) 
+  
+broom::tidy(Baltimore_test) %>% 
+  select(estimate,conf.low,conf.high)
+```
+
+The estimated proportion of unsolved cases is `r broom::tidy(Baltimore_test) %>% pull(estimate)` and the confidence interval is (`r broom::tidy(Baltimore_test) %>%pull(conf.low)`,`r broom::tidy(Baltimore_test) %>%pull(conf.high)`).
+
+```{r}
+unsolved_all = homicides %>%
+  mutate(
+    city_state = str_c(city,", ",state)
+  ) %>%
+  group_by(city_state) %>%
+  filter(city_state != "Tulsa, AL") %>%
+  summarize(
+    unsolved_cases = sum(disposition != "Closed by arrest"),
+    city_n = n()
+  ) %>%
+  mutate(
+    prop_test = purrr::map2(.x = unsolved_cases, .y = city_n, ~prop.test(x = .x, n= .y)),
+    tidy_test = purrr::map(.x = prop_test, ~broom::tidy(.x))
+  ) %>%
+  unnest(tidy_test) %>%
+  select(city_state,estimate,conf.low,conf.high)
+```
+
+
+```{r}
+ggplot(unsolved_all, aes(x=reorder(city_state, +estimate), y = estimate, fill = estimate))+ geom_bar(stat="identity")+geom_errorbar(aes(ymin = conf.low, ymax=conf.high))+labs(title = "The estimated proportions of unsolved cases for each city", x = "City & State", y = "Proportion estimate")+coord_flip()+scale_fill_gradient(low="blue",high="red")
+```
+
+Since Tulsa, AL had only 1 case, which was a solved case. We excluded it from the proportion test. 
