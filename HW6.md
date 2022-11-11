@@ -18,7 +18,7 @@ library(tidyverse)
 
 ``` r
 library(ggridges)
-
+library(purrr)
 knitr::opts_chunk$set(
     echo = TRUE,
     warning = FALSE,
@@ -138,8 +138,8 @@ unsolved_all = homicides %>%
     city_n = n()
   ) %>%
   mutate(
-    prop_test = purrr::map2(.x = unsolved_cases, .y = city_n, ~prop.test(x = .x, n= .y)),
-    tidy_test = purrr::map(.x = prop_test, ~broom::tidy(.x))
+    prop_test = map2(.x = unsolved_cases, .y = city_n, ~prop.test(x = .x, n= .y)),
+    tidy_test = map(.x = prop_test, ~broom::tidy(.x))
   ) %>%
   unnest(tidy_test) %>%
   select(city_state,estimate,conf.low,conf.high)
@@ -152,4 +152,63 @@ ggplot(unsolved_all, aes(x=reorder(city_state, +estimate), y = estimate, fill = 
 <img src="HW6_files/figure-gfm/unnamed-chunk-6-1.png" width="90%" />
 
 Since Tulsa, AL had only 1 case, which was a solved case. We excluded it
-from the proportion test.
+from the proportion test. Moreover, there is no city in Alabama that is
+called Tulsa, so it is probably a misinformation that should be removed.
+
+## Question 3
+
+``` r
+sim_result_df = 
+  expand_grid(
+  sample_size = 30,
+  iteration = 1:5000,
+  mu = 0:6
+) %>%
+  mutate(
+    norm_df = map2(.x = sample_size, .y = mu, ~rnorm(n = .x, mean = .y, sd = 5))
+  ) %>%
+  mutate(
+    t_test = map(.x = norm_df, ~t.test(x = .x)),
+    tidy_test = map(.x = t_test, ~broom::tidy(.x))
+  ) %>%
+  unnest(tidy_test) %>%
+  select(iteration, sample_size, mu, estimate, p.value)
+```
+
+``` r
+sim_result_df %>%
+  group_by(mu) %>%
+  summarize(
+    n_rejected = sum(p.value <0.05),
+    n_total = n(),
+    proportion = n_rejected/n_total
+  ) %>% 
+  ggplot(aes(x=mu,y=proportion,fill = proportion))+geom_bar(stat="identity")+labs(title="Proportion of times the null were rejected by different population means", y = "power of the test")
+```
+
+<img src="HW6_files/figure-gfm/unnamed-chunk-8-1.png" width="90%" />
+
+As shown by the above graph, the larger the difference between the true
+population mean and our null, the higher the proportion of times the
+null was rejected. In other words, as effect size increases, the power
+also increases.
+
+``` r
+sim_result_df %>%
+  filter(p.value < 0.05) %>%
+  group_by(mu) %>%
+  summarize(
+    estimate_average = mean(estimate)
+  ) %>%
+  ggplot(aes(x = mu, y = estimate_average))+geom_point()+labs(title = "Average of the estimates vs. true population means")
+```
+
+<img src="HW6_files/figure-gfm/unnamed-chunk-9-1.png" width="90%" />
+
+As shown in the above graph, the sample average of $\hat \mu$ across
+test for which the null is rejected is approximately equal to the true
+value of $\mu$ as $\mu$ increases beyond 3. The average of $\hat \mu$ is
+very different from the true population mean when $\mu$ is equal to 1 or
+2. This is because the power of the test increases as the effect size
+increases, so we would expect a better approximation to the true value
+of $\mu$ based on our estimate average.
