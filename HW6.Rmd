@@ -69,7 +69,6 @@ tidy_df %>%
   facet_grid(~group)
 ```
 
-
 ## Question 2
 
 ```{r}
@@ -86,12 +85,12 @@ homicides %>%
   ) %>%
   group_by(city_state) %>%
   summarize(
-    solved_cases = sum(disposition == "Closed by arrest"),
+    total_cases = n(),
     unsolved_cases = sum(disposition != "Closed by arrest")
   )
 ```
 
-The above table showed the number of solved homicides (with the disposition being "Closed with arrest") and the number of unsolved homicides (with the dispositions of "Closed without arrest" or "Open/No arrest") by each city. 
+The above table showed the number of total homicides of each city and the number of unsolved homicides (with the dispositions of "Closed without arrest" or "Open/No arrest") by each city. 
 
 ```{r}
 Baltimore_summary = homicides %>%
@@ -115,7 +114,7 @@ broom::tidy(Baltimore_test) %>%
   select(estimate,conf.low,conf.high)
 ```
 
-The estimated proportion of unsolved cases is `r broom::tidy(Baltimore_test) %>% pull(estimate)` and the confidence interval is (`r broom::tidy(Baltimore_test) %>%pull(conf.low)`,`r broom::tidy(Baltimore_test) %>%pull(conf.high)`).
+The estimated proportion of unsolved cases in Baltimore is `r broom::tidy(Baltimore_test) %>% pull(estimate)` and the confidence interval is (`r broom::tidy(Baltimore_test) %>%pull(conf.low)`,`r broom::tidy(Baltimore_test) %>%pull(conf.high)`).
 
 ```{r}
 unsolved_all = homicides %>%
@@ -141,7 +140,7 @@ unsolved_all = homicides %>%
 ggplot(unsolved_all, aes(x=reorder(city_state, +estimate), y = estimate, fill = estimate))+ geom_bar(stat="identity")+geom_errorbar(aes(ymin = conf.low, ymax=conf.high))+labs(title = "The estimated proportions of unsolved cases for each city", x = "City & State", y = "Proportion estimate")+coord_flip()+scale_fill_gradient(low="blue",high="red")
 ```
 
-Since Tulsa, AL had only 1 case, which was a solved case. We excluded it from the proportion test. Moreover, there is no city in Alabama that is called Tulsa, so it is probably a misinformation that should be removed.
+Since Tulsa, AL had only 1 case, which was a solved case. We excluded it from the proportion test. Moreover, there is no city in Alabama that is called Tulsa, so it is probably a misinformation that should be removed. The above plot showed the estimates and confidence interval of proportion of unsolved cases for each city. 
 
 ## Question 3
 

@@ -248,30 +248,29 @@ homicides %>%
   ) %>%
   group_by(city_state) %>%
   summarize(
-    solved_cases = sum(disposition == "Closed by arrest"),
+    total_cases = n(),
     unsolved_cases = sum(disposition != "Closed by arrest")
   )
 ```
 
     ## # A tibble: 51 × 3
-    ##    city_state      solved_cases unsolved_cases
-    ##    <chr>                  <int>          <int>
-    ##  1 Albuquerque, NM          232            146
-    ##  2 Atlanta, GA              600            373
-    ##  3 Baltimore, MD           1002           1825
-    ##  4 Baton Rouge, LA          228            196
-    ##  5 Birmingham, AL           453            347
-    ##  6 Boston, MA               304            310
-    ##  7 Buffalo, NY              202            319
-    ##  8 Charlotte, NC            481            206
-    ##  9 Chicago, IL             1462           4073
-    ## 10 Cincinnati, OH           385            309
+    ##    city_state      total_cases unsolved_cases
+    ##    <chr>                 <int>          <int>
+    ##  1 Albuquerque, NM         378            146
+    ##  2 Atlanta, GA             973            373
+    ##  3 Baltimore, MD          2827           1825
+    ##  4 Baton Rouge, LA         424            196
+    ##  5 Birmingham, AL          800            347
+    ##  6 Boston, MA              614            310
+    ##  7 Buffalo, NY             521            319
+    ##  8 Charlotte, NC           687            206
+    ##  9 Chicago, IL            5535           4073
+    ## 10 Cincinnati, OH          694            309
     ## # … with 41 more rows
 
-The above table showed the number of solved homicides (with the
-disposition being “Closed with arrest”) and the number of unsolved
-homicides (with the dispositions of “Closed without arrest” or “Open/No
-arrest”) by each city.
+The above table showed the number of total homicides of each city and
+the number of unsolved homicides (with the dispositions of “Closed
+without arrest” or “Open/No arrest”) by each city.
 
 ``` r
 Baltimore_summary = homicides %>%
@@ -300,8 +299,8 @@ broom::tidy(Baltimore_test) %>%
     ##      <dbl>    <dbl>     <dbl>
     ## 1    0.646    0.628     0.663
 
-The estimated proportion of unsolved cases is 0.6455607 and the
-confidence interval is (0.6275625,0.6631599).
+The estimated proportion of unsolved cases in Baltimore is 0.6455607 and
+the confidence interval is (0.6275625,0.6631599).
 
 ``` r
 unsolved_all = homicides %>%
@@ -331,6 +330,8 @@ ggplot(unsolved_all, aes(x=reorder(city_state, +estimate), y = estimate, fill = 
 Since Tulsa, AL had only 1 case, which was a solved case. We excluded it
 from the proportion test. Moreover, there is no city in Alabama that is
 called Tulsa, so it is probably a misinformation that should be removed.
+The above plot showed the estimates and confidence interval of
+proportion of unsolved cases for each city.
 
 ## Question 3
 
